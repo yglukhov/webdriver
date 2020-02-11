@@ -1,8 +1,8 @@
 # webdriver
 Nim webdriver for Chrome and Firefox
 
-# Here's an example of calling a Chrome browser, but not all code, just a simple way to use it.
-# You can also use similar code to call the Firefox browser.
+## Here's an example of calling a Chrome browser, but not all code, just a simple way to use it.
+## You can also use similar code to call the Firefox browser.
 
 ```nim
 import asyncdispatch, terminal, strutils, os, math, strformat
