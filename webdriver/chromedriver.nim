@@ -1,4 +1,4 @@
-import asyncdispatch, osproc, os, json
+import asyncdispatch, osproc, os
 
 import ./driver, ./webdriver_base
 export driver
@@ -18,11 +18,3 @@ proc newChromeDriver*(): ChromeDriver =
 method close*(d: ChromeDriver) {.async.} =
   await procCall WebDriver(d).close()
   d.process.terminate()
-
-method adjustSessionArguments*(d: ChromeDriver, args: JsonNode, headless: bool) =
-  if headless:
-    args["capabilities"]["alwaysMatch"]["goog:chromeOptions"] = %*{
-      "args": [
-        "-headless"
-      ]
-    }
