@@ -1,4 +1,4 @@
-import asyncdispatch, httpclient, strutils, json, osproc, os
+import asyncdispatch, httpclient, strutils, json
 import private/utils
 import ./driver
 export driver
@@ -109,18 +109,24 @@ method getElementText*(d: WebDriver, e: string): Future[string] {.async.} =
 method elementClick*(d: WebDriver, e: string) {.async.} =
   discard await post(d, "element/" & e & "/click", %*{})
 
-method adjustSessionArguments*(d: WebDriver, args: JsonNode, headless: bool) {.base.} = discard
-
-method startSession*(d: WebDriver, headless = false) {.async.} =
+method startSession*(d: WebDriver, options: JsonNode = %*{}, headless = false) {.async.} =
   var args = %*{
     "capabilities": {
       "alwaysMatch": {
         "acceptInsecureCerts": true,
+        "goog:chromeOptions": {}
       }
     }
   }
 
-  d.adjustSessionArguments(args, headless)
+  args["capabilities"]["alwaysMatch"]["goog:chromeOptions"] = options
+
+  if headless:
+    args["capabilities"]["alwaysMatch"]["goog:chromeOptions"] = %*{
+      "args": [
+        "-headless"
+      ]
+    }
 
   let r = await post(d, "session", args)
   d.sessid = r["sessionId"].getStr()
