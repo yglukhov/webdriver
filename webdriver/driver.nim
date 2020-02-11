@@ -30,7 +30,7 @@ method getElementFromElement*(d: Driver, e, strategy, value: string): Future[str
 method getElementAttribute*(d: Driver, e, a: string): Future[string] {.async, base.} = noimpl()
 method getElementText*(d: Driver, e: string): Future[string] {.async, base.} = noimpl()
 method elementClick*(d: Driver, e: string) {.async, base.} = noimpl()
-method startSession*(d: Driver, headless = false) {.async, base.} = noimpl()
+method startSession*(d: Driver, options: JsonNode = %*{}, headless = false) {.async, base.} = noimpl()
 method deleteSession*(d: Driver) {.async, base.} = noimpl()
 method back*(d: Driver) {.async, base.} = noimpl()
 method close*(d: Driver) {.async, base.} = await d.deleteSession()
@@ -49,3 +49,4 @@ proc getElementByLinkText*(d: Driver, s: string): Future[string] = d.getElement(
 proc getElementByPartialLinkText*(d: Driver, s: string): Future[string] = d.getElement(toKeyword(PartialLinkTextSelector), s)
 proc getElementByTagName*(d: Driver, s: string): Future[string] = d.getElement(toKeyword(TagNameSelector), s)
 proc getElementByXPath*(d: Driver, s: string): Future[string] = d.getElement(toKeyword(XPathSelector), s)
+
