@@ -37,7 +37,10 @@ proc main() {.async.} =
     return
 
   var driver = newChromeDriver()
-  await driver.startSession()
+  var args = %*{
+    "excludeSwitches": ["enable-automation"],
+  }
+  await driver.startSession(args)
   var ret = await login(driver, login_url, login_username, login_password)
   if ret:
     if site_task_flag=="task":
