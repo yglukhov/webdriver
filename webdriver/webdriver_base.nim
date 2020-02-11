@@ -76,6 +76,28 @@ method getElements*(d: WebDriver, strategy, value: string): Future[seq[string]] 
       res.add(v.getStr())
   return res
 
+method getElement*(d: WebDriver, strategy, value: string): Future[string] {.async.} =
+  let r = await post(d, "element", %*{"using": strategy, "value": value})
+  var res: string
+  for k, v in r:
+    res.add(v.getStr())
+  return res
+
+method getElementsFromElement*(d: WebDriver, e, strategy, value: string): Future[seq[string]] {.async.} =
+  let r = await post(d, "element/" & e & "/elements", %*{"using": strategy, "value": value})
+  var res: seq[string]
+  for e in r:
+    for k, v in e:
+      res.add(v.getStr())
+  return res
+
+method getElementFromElement*(d: WebDriver, e, strategy, value: string): Future[string] {.async.} =
+  let r = await post(d, "element/" & e & "/element", %*{"using": strategy, "value": value})
+  var res: string
+  for k, v in r:
+    res.add(v.getStr())
+  return res
+
 method getElementAttribute*(d: WebDriver, e, a: string): Future[string] {.async.} =
   let r = await get(d, "element/" & e & "/attribute/" & a)
   return r.getStr()
@@ -108,3 +130,19 @@ method deleteSession*(d: WebDriver) {.async.} =
 
 method back*(d: WebDriver) {.async.} =
   discard await post(d, "back", %*{})
+
+method sendKeys*(d: WebDriver, e,t: string) {.async.} =
+  discard await post(d, "element/" & e & "/value", %*{"text": t})
+
+method clear*(d: WebDriver, e: string) {.async.} =
+  discard await post(d, "element/" & e & "/clear", %*{})
+
+method executeScript*(d: WebDriver, code: string, args: JsonNode = %*{}): Future[string] {.async.} =
+  var json = %*{
+    "script": code,
+    "args": []
+  }
+  json["args"].elems.add args
+
+  let r = await post(d, "execute/sync", json)
+  return $r
