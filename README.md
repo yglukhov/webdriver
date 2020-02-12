@@ -5,7 +5,7 @@ Nim webdriver for Chrome and Firefox
 ## You can also use similar code to call the Firefox browser.
 
 ```nim
-import asyncdispatch, terminal, strutils
+import asyncdispatch, terminal, strutils, json
 import webdriver/chromedriver
 import parseini
 
