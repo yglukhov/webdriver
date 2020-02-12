@@ -19,10 +19,12 @@ method close*(d: GeckoDriver) {.async.} =
   await procCall WebDriver(d).close()
   d.process.terminate()
 
-method adjustSessionArguments*(d: GeckoDriver, args: JsonNode, headless: bool) =
+method adjustSessionArguments*(d: GeckoDriver, args: JsonNode, options = %*{}, headless: bool) =
   if headless:
     args["capabilities"]["alwaysMatch"]["moz:firefoxOptions"] = %*{
       "args": [
         "-headless"
       ]
     }
+  if options != %*{}:
+    args["capabilities"]["alwaysMatch"]["moz:firefoxOptions"] = options

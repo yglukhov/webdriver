@@ -19,10 +19,13 @@ method close*(d: ChromeDriver) {.async.} =
   await procCall WebDriver(d).close()
   d.process.terminate()
 
-method adjustSessionArguments*(d: ChromeDriver, args: JsonNode, headless: bool) =
+method adjustSessionArguments*(d: ChromeDriver, args: JsonNode, options = %*{}, headless: bool) =
   if headless:
     args["capabilities"]["alwaysMatch"]["goog:chromeOptions"] = %*{
       "args": [
         "-headless"
       ]
     }
+
+  if options != %*{}:
+    args["capabilities"]["alwaysMatch"]["goog:chromeOptions"] = options

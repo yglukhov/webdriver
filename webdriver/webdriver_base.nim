@@ -1,4 +1,4 @@
-import asyncdispatch, httpclient, strutils, json, osproc, os
+import asyncdispatch, httpclient, strutils, json
 import private/utils
 import ./driver
 export driver
@@ -15,10 +15,6 @@ method startDriverProcess(d: WebDriver) {.base.} = noimpl()
 proc init*(d: WebDriver) =
   d.port = allocateRandomPort()
   d.startDriverProcess()
-
-proc newGeckoDriver*(): WebDriver =
-  result.new()
-  result.startDriverProcess()
 
 proc checkErr(j: JsonNode) =
   if j.kind == JObject:
@@ -68,31 +64,31 @@ method getSource*(d: WebDriver): Future[string] {.async.} =
   let r = await get(d, "source")
   return r.getStr()
 
-method getElements*(d: WebDriver, strategy, value: string): Future[seq[string]] {.async.} =
-  let r = await post(d, "elements", %*{"using": strategy, "value": value})
+method getElements*(d: WebDriver, strategy: By, value: string): Future[seq[string]] {.async.} =
+  let r = await post(d, "elements", %*{"using": $strategy, "value": value})
   var res: seq[string]
   for e in r:
     for k, v in e:
       res.add(v.getStr())
   return res
 
-method getElement*(d: WebDriver, strategy, value: string): Future[string] {.async.} =
-  let r = await post(d, "element", %*{"using": strategy, "value": value})
+method getElement*(d: WebDriver, strategy: By, value: string): Future[string] {.async.} =
+  let r = await post(d, "element", %*{"using": $strategy, "value": value})
   var res: string
   for k, v in r:
     res.add(v.getStr())
   return res
 
-method getElementsFromElement*(d: WebDriver, e, strategy, value: string): Future[seq[string]] {.async.} =
-  let r = await post(d, "element/" & e & "/elements", %*{"using": strategy, "value": value})
+method getElementsFromElement*(d: WebDriver, e: string, strategy: By, value: string): Future[seq[string]] {.async.} =
+  let r = await post(d, "element/" & e & "/elements", %*{"using": $strategy, "value": value})
   var res: seq[string]
   for e in r:
     for k, v in e:
       res.add(v.getStr())
   return res
 
-method getElementFromElement*(d: WebDriver, e, strategy, value: string): Future[string] {.async.} =
-  let r = await post(d, "element/" & e & "/element", %*{"using": strategy, "value": value})
+method getElementFromElement*(d: WebDriver, e: string, strategy: By, value: string): Future[string] {.async.} =
+  let r = await post(d, "element/" & e & "/element", %*{"using": $strategy, "value": value})
   var res: string
   for k, v in r:
     res.add(v.getStr())
@@ -109,18 +105,18 @@ method getElementText*(d: WebDriver, e: string): Future[string] {.async.} =
 method elementClick*(d: WebDriver, e: string) {.async.} =
   discard await post(d, "element/" & e & "/click", %*{})
 
-method adjustSessionArguments*(d: WebDriver, args: JsonNode, headless: bool) {.base.} = discard
+method adjustSessionArguments*(d: WebDriver, args: JsonNode, options = %*{}, headless: bool) {.base.} = discard
 
-method startSession*(d: WebDriver, headless = false) {.async.} =
+method startSession*(d: WebDriver, options = %*{}, headless = false) {.async.} =
   var args = %*{
     "capabilities": {
       "alwaysMatch": {
-        "acceptInsecureCerts": true,
+        "acceptInsecureCerts": true
       }
     }
   }
 
-  d.adjustSessionArguments(args, headless)
+  d.adjustSessionArguments(args, options, headless)
 
   let r = await post(d, "session", args)
   d.sessid = r["sessionId"].getStr()
@@ -137,7 +133,7 @@ method sendKeys*(d: WebDriver, e,t: string) {.async.} =
 method clear*(d: WebDriver, e: string) {.async.} =
   discard await post(d, "element/" & e & "/clear", %*{})
 
-method executeScript*(d: WebDriver, code: string, args: JsonNode = %*{}): Future[string] {.async.} =
+method executeScript*(d: WebDriver, code: string, args = %*{}): Future[string] {.async.} =
   var json = %*{
     "script": code,
     "args": []
