@@ -5,11 +5,11 @@ Nim webdriver for Chrome and Firefox
 ## You can also use similar code to call the Firefox browser.
 
 ```nim
-import asyncdispatch, terminal, strutils, os, math, strformat
+import asyncdispatch, terminal, strutils
 import webdriver/chromedriver
 import parseini
 
-proc login(driver: ChromeDriver, login_url, login_username, login_password: string): Future[bool] {.async.} =
+proc login(driver: Driver, login_url, login_username, login_password: string): Future[bool] {.async.} =
   try:
     await driver.setUrl(login_url)
     var elem_username = await driver.getElementBySelector("#txtUserName2")
