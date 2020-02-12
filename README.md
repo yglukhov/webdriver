@@ -38,7 +38,7 @@ proc main() {.async.} =
 
   var driver = newChromeDriver()
   var options = %*{
-    "excludeSwitches": ["enable-automation"],
+    "excludeSwitches": ["enable-automation"]
   }
   await driver.startSession(options)
   var ret = await login(driver, login_url, login_username, login_password)
