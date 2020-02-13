@@ -94,6 +94,10 @@ method getElementFromElement*(d: WebDriver, e: string, strategy: By, value: stri
     res.add(v.getStr())
   return res
 
+method getElementProperty*(d: WebDriver, e, a: string): Future[string] {.async.} =
+  let r = await get(d, "element/" & e & "/property/" & a)
+  return r.getStr()
+  
 method getElementAttribute*(d: WebDriver, e, a: string): Future[string] {.async.} =
   let r = await get(d, "element/" & e & "/attribute/" & a)
   return r.getStr()
@@ -133,12 +137,14 @@ method sendKeys*(d: WebDriver, e,t: string) {.async.} =
 method clear*(d: WebDriver, e: string) {.async.} =
   discard await post(d, "element/" & e & "/clear", %*{})
 
-method executeScript*(d: WebDriver, code: string, args = %*{}): Future[string] {.async.} =
+method executeScript*(d: WebDriver, code: string, args = %*[]): Future[string] {.async.} =
   var json = %*{
     "script": code,
     "args": []
   }
-  json["args"].elems.add args
+  for i in args:
+    json["args"].elems.add i
 
   let r = await post(d, "execute/sync", json)
   return $r
+
