@@ -20,6 +20,7 @@ method getElement*(d: Driver, strategy: By, value: string): Future[string] {.asy
 method getElementsFromElement*(d: Driver, e: string, strategy: By, value: string): Future[seq[string]] {.async, base.} = noimpl()
 method getElementFromElement*(d: Driver, e: string, strategy: By, value: string): Future[string] {.async, base.} = noimpl()
 method getElementAttribute*(d: Driver, e, a: string): Future[string] {.async, base.} = noimpl()
+method getElementProperty*(d: Driver, e, a: string): Future[string] {.async, base.} = noimpl()
 method getElementText*(d: Driver, e: string): Future[string] {.async, base.} = noimpl()
 method elementClick*(d: Driver, e: string) {.async, base.} = noimpl()
 method startSession*(d: Driver, options = %*{}, headless = false) {.async, base.} = noimpl()
@@ -28,16 +29,25 @@ method back*(d: Driver) {.async, base.} = noimpl()
 method close*(d: Driver) {.async, base.} = await d.deleteSession()
 method sendKeys*(d: Driver, e,t: string) {.async, base.} = noimpl()
 method clear*(d: Driver, e: string) {.async, base.} = noimpl()
-method executeScript*(d: Driver,code: string, args = %*{}): Future[string] {.async, base.} = noimpl()
+method executeScript*(d: Driver,code: string, args = %*[]): Future[string] {.async, base.} = noimpl()
 
-proc getElementsByCssSelector*(d: Driver, s: string): Future[seq[string]] = d.getElements(By.cssSelector, s)
-proc getElementsByLinkText*(d: Driver, s: string): Future[seq[string]] = d.getElements(By.linkText, s)
-proc getElementsByPartialLinkText*(d: Driver, s: string): Future[seq[string]] = d.getElements(By.partialLinkText, s)
-proc getElementsByTagName*(d: Driver, s: string): Future[seq[string]] = d.getElements(By.tagName, s)
-proc getElementsByXPath*(d: Driver, s: string): Future[seq[string]] = d.getElements(By.xPath, s)
-
-proc getElementBySelector*(d: Driver, s: string): Future[string] = d.getElement(By.cssSelector, s)
-proc getElementByLinkText*(d: Driver, s: string): Future[string] = d.getElement(By.linkText, s)
-proc getElementByPartialLinkText*(d: Driver, s: string): Future[string] = d.getElement(By.partialLinkText, s)
-proc getElementByTagName*(d: Driver, s: string): Future[string] = d.getElement(By.tagName, s)
-proc getElementByXPath*(d: Driver, s: string): Future[string] = d.getElement(By.xPath, s)
+proc getElementsByCssSelector*(d: Driver, s: string): Future[seq[string]] {.async.} =
+  result = await d.getElements(By.cssSelector, s)
+proc getElementsByLinkText*(d: Driver, s: string): Future[seq[string]] {.async.} =
+  result = await d.getElements(By.linkText, s)
+proc getElementsByPartialLinkText*(d: Driver, s: string): Future[seq[string]] {.async.} =
+  result = await d.getElements(By.partialLinkText, s)
+proc getElementsByTagName*(d: Driver, s: string): Future[seq[string]] {.async.} =
+  result = await d.getElements(By.tagName, s)
+proc getElementsByXPath*(d: Driver, s: string): Future[seq[string]] {.async.} =
+  result = await d.getElements(By.xPath, s)
+proc getElementBySelector*(d: Driver, s: string): Future[string] {.async.} =
+  result = await d.getElement(By.cssSelector, s)
+proc getElementByLinkText*(d: Driver, s: string): Future[string] {.async.} =
+  result = await d.getElement(By.linkText, s)
+proc getElementByPartialLinkText*(d: Driver, s: string): Future[string] {.async.} =
+  result = await d.getElement(By.partialLinkText, s)
+proc getElementByTagName*(d: Driver, s: string): Future[string] {.async.} =
+  result = await d.getElement(By.tagName, s)
+proc getElementByXPath*(d: Driver, s: string): Future[string] {.async.} =
+  result = await d.getElement(By.xPath, s)
