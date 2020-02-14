@@ -1,4 +1,4 @@
-import asyncdispatch, json
+import asyncdispatch, json, times, os
 
 import private/utils
 
@@ -51,3 +51,22 @@ proc getElementByTagName*(d: Driver, s: string): Future[string] {.async.} =
   result = await d.getElement(By.tagName, s)
 proc getElementByXPath*(d: Driver, s: string): Future[string] {.async.} =
   result = await d.getElement(By.xPath, s)
+
+proc waitElement*(d: Driver, strategy: By, value: string, timeout = 20000, pollFrequency = 500): Future[string] {.async.} =
+  ## When "setUrl ()" or" elementClick ()" is used, 
+  ## wait for the page specified element loading to complete and then perform a subsequent action. 
+  ## Otherwise, you may not get the element. 
+  var curTime = getTime()
+  var endTime = curTime + timeout.milliseconds
+  while true:
+    try:
+      var ret = await d.getElement(strategy, value)
+      if ret != "":
+        return ret
+    except:
+      discard
+
+    sleep(pollFrequency)
+
+    if getTime() > endTime:
+        break
