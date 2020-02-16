@@ -1,4 +1,4 @@
-import asyncdispatch, strutils, json, osproc, os
+import asyncdispatch, strutils, json, osproc, os, times
 
 import asyncnet
 
@@ -90,16 +90,43 @@ method getSource*(d: FirefoDriver): Future[string] {.async.} =
   let r = await send(d, "GetPageSource", %*{})
   return r["value"].getStr()
 
-method getElements*(d: FirefoDriver, strategy, value: string): Future[seq[string]] {.async.} =
-  let r = await send(d, "FindElements", %*{"using": strategy, "value": value})
+method getElements*(d: FirefoDriver, strategy: By, value: string): Future[seq[string]] {.async.} =
+  let r = await send(d, "FindElements", %*{"using": $strategy, "value": value})
   var res: seq[string]
   for e in r:
     for k, v in e:
       res.add(v.getStr())
   return res
 
+method getElement*(d: FirefoDriver, strategy: By, value: string): Future[string] {.async.} =
+  let r = await send(d, "FindElements", %*{"using": $strategy, "value": value})
+  var res: seq[string]
+  for e in r:
+    for k, v in e:
+      res.add(v.getStr())
+  return res[0]
+
+method getElementsFromElement*(d: FirefoDriver, e: string, strategy: By, value: string): Future[seq[string]] {.async.} =
+  let r = await send(d, "FindElements", %*{"element": e, "using": $strategy, "value": value})
+  var res: seq[string]
+  for e in r:
+    for k, v in e:
+      res.add(v.getStr())
+  return res
+
+method getElementFromElement*(d: FirefoDriver, e: string, strategy: By, value: string): Future[string] {.async.} =
+  let r = await send(d, "FindElement", %*{"element": e, "using": $strategy, "value": value})
+  var res: string
+  for k, v in r:
+    res.add(v.getStr())
+  return res
+
 method getElementAttribute*(d: FirefoDriver, e, a: string): Future[string] {.async.} =
   let r = await send(d, "GetElementAttribute", %*{"id": e, "name": a})
+  return r["value"].getStr()
+
+method getElementProperty*(d: FirefoDriver, e, a: string): Future[string] {.async.} =
+  let r = await send(d, "GetElementProperty", %*{"id": e, "name": a})
   return r["value"].getStr()
 
 method getElementText*(d: FirefoDriver, e: string): Future[string] {.async.} =
@@ -109,22 +136,27 @@ method getElementText*(d: FirefoDriver, e: string): Future[string] {.async.} =
 method elementClick*(d: FirefoDriver, e: string) {.async.} =
   discard await send(d, "ElementClick", %*{"id": e})
 
-method startSession*(d: FirefoDriver, headless = false) {.async.} =
+method startSession*(d: FirefoDriver, options = %*{}, headless = false) {.async.} =
   d.createProfileFolder()
   d.startDriverProcess(headless)
   d.sock = newAsyncSocket()
 
   var args = %*{
-    "acceptInsecureCerts": true,
+    "acceptInsecureCerts": true
   }
 
-  for i in 0 .. 30:
+  if options != %*{}:
+    args["moz:firefoxOptions"] = options
+
+  var endTime = getTime() + 20000.milliseconds
+  while true:
     try:
       await d.sock.connect("localhost", d.marionettePort)
       break
     except:
-      if i == 10:
+      if getTime() > endTime:
         raise
+
     await sleepAsync(200)
 
   let hi = await d.readMessage()
@@ -137,3 +169,21 @@ method deleteSession*(d: FirefoDriver) {.async.} =
 
 method back*(d: FirefoDriver) {.async.} =
   discard await send(d, "Back", %*{})
+
+method sendKeys*(d: FirefoDriver, e,t: string) {.async.} =
+  discard await send(d, "ElementSendKeys", %*{"id": e,"text": t})
+
+method clear*(d: FirefoDriver, e: string) {.async.} =
+  discard await send(d, "ElementClear", %*{"id": e})
+
+method executeScript*(d: FirefoDriver, code: string, args = %*[]): Future[string] {.async.} =
+  var json = %*{
+    "script": code,
+    "args": []
+  }
+  for i in args:
+    json["args"].elems.add i
+
+  let r = await send(d, "ExecuteScript", json)
+  return $r["value"]
+
