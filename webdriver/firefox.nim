@@ -99,12 +99,11 @@ method getElements*(d: FirefoDriver, strategy: By, value: string): Future[seq[st
   return res
 
 method getElement*(d: FirefoDriver, strategy: By, value: string): Future[string] {.async.} =
-  let r = await send(d, "FindElements", %*{"using": $strategy, "value": value})
-  var res: seq[string]
-  for e in r:
-    for k, v in e:
-      res.add(v.getStr())
-  return res[0]
+  let r = await send(d, "FindElement", %*{"using": $strategy, "value": value})
+  var res: string
+  for k, v in r["value"]:
+    res.add(v.getStr())
+  return res
 
 method getElementsFromElement*(d: FirefoDriver, e: string, strategy: By, value: string): Future[seq[string]] {.async.} =
   let r = await send(d, "FindElements", %*{"element": e, "using": $strategy, "value": value})
@@ -117,7 +116,7 @@ method getElementsFromElement*(d: FirefoDriver, e: string, strategy: By, value: 
 method getElementFromElement*(d: FirefoDriver, e: string, strategy: By, value: string): Future[string] {.async.} =
   let r = await send(d, "FindElement", %*{"element": e, "using": $strategy, "value": value})
   var res: string
-  for k, v in r:
+  for k, v in r["value"]:
     res.add(v.getStr())
   return res
 
@@ -156,7 +155,7 @@ method startSession*(d: FirefoDriver, options = %*{}, headless = false) {.async.
     except:
       if getTime() > endTime:
         raise
-
+        
     await sleepAsync(200)
 
   let hi = await d.readMessage()
