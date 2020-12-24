@@ -26,12 +26,12 @@ proc login(driver: Driver, login_url, login_username, login_password: string): F
   
 proc main() {.async.} =
   let cfg = loadConfig("config.ini")
-  let login_url = cfg.get("app","login_url")
-  let login_username = cfg.get("app", "login_username")
-  let login_password = cfg.get("app", "login_password")
-  let task_url = cfg.get("app", "task_url")
-  let site_url = cfg.get("app", "site_url")
-  let site_task_flag = cfg.get("app", "site_task_flag")
+  let login_url = cfg.getSectionValue("app","login_url")
+  let login_username = cfg.getSectionValue("app", "login_username")
+  let login_password = cfg.getSectionValue("app", "login_password")
+  let task_url = cfg.getSectionValue("app", "task_url")
+  let site_url = cfg.getSectionValue("app", "site_url")
+  let site_task_flag = cfg.getSectionValue("app", "site_task_flag")
   if site_task_flag != "task" and site_task_flag != "site":
     styledEcho(fgRed, "Configuration error")
     return
