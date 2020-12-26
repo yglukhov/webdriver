@@ -7,7 +7,6 @@ Nim webdriver for Chrome and Firefox
 ```nim
 import asyncdispatch, terminal, strutils, json
 import webdriver/chromedriver
-import parseini
 
 proc login(driver: Driver, login_url, login_username, login_password: string): Future[bool] {.async.} =
   try:
@@ -25,13 +24,12 @@ proc login(driver: Driver, login_url, login_username, login_password: string): F
   return true
   
 proc main() {.async.} =
-  let cfg = loadConfig("config.ini")
-  let login_url = cfg.getSectionValue("app","login_url")
-  let login_username = cfg.getSectionValue("app", "login_username")
-  let login_password = cfg.getSectionValue("app", "login_password")
-  let task_url = cfg.getSectionValue("app", "task_url")
-  let site_url = cfg.getSectionValue("app", "site_url")
-  let site_task_flag = cfg.getSectionValue("app", "site_task_flag")
+  let login_url = "http://www.test.com"
+  let login_username = "login_username"
+  let login_password = "login_password"
+  let task_url = "http://www.test.com/task_url"
+  let site_url = "http://www.test.com/site_url"
+  let site_task_flag = "task"
   if site_task_flag != "task" and site_task_flag != "site":
     styledEcho(fgRed, "Configuration error")
     return
