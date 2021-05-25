@@ -1,4 +1,4 @@
-import asyncdispatch, httpclient, strutils, json
+import asyncdispatch, httpclient, strutils, json, net
 import private/utils
 import ./driver
 export driver
@@ -23,6 +23,9 @@ proc checkErr(j: JsonNode) =
       raise newException(Exception, e.getStr())
 
 proc request(d: WebDriver, meth: HttpMethod, path: string, o: JsonNode = nil): Future[JsonNode] {.async.} =
+  # let client = newAsyncHttpClient(sslContext = newContext(verifyMode = CVerifyNone))
+  # echo "requst ", path
+
   let client = newAsyncHttpClient()
   var b: string
   if not o.isNil:
@@ -38,11 +41,13 @@ proc request(d: WebDriver, meth: HttpMethod, path: string, o: JsonNode = nil): F
   if path.len != 0:
     url &= "/"
     url &= path
-
+  echo "req ", url, " meth ", meth, " b ", b
+  # await sleepAsync(1000000)
   let r = await client.request(url, httpMethod = meth, body = b)
+  echo "sent "
   let rb = await r.body
   let res = parseJson(rb)["value"]
-  # echo "res: ", res
+  echo "res: ", res
   checkErr(res)
   client.close()
   return res
@@ -97,7 +102,7 @@ method getElementFromElement*(d: WebDriver, e: string, strategy: By, value: stri
 method getElementProperty*(d: WebDriver, e, a: string): Future[string] {.async.} =
   let r = await get(d, "element/" & e & "/property/" & a)
   return r.getStr()
-  
+
 method getElementAttribute*(d: WebDriver, e, a: string): Future[string] {.async.} =
   let r = await get(d, "element/" & e & "/attribute/" & a)
   return r.getStr()
@@ -147,4 +152,3 @@ method executeScript*(d: WebDriver, code: string, args = %*[]): Future[string] {
 
   let r = await post(d, "execute/sync", json)
   return $r
-
