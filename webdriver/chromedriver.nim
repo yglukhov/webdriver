@@ -8,8 +8,11 @@ type ChromeDriver* = ref object of WebDriver
 
 method startDriverProcess(d: ChromeDriver) =
   var exe = findExe("chromedriver")
+  echo "exe: ", exe.len
   if exe.len == 0:
     exe = findExe("chromium.chromedriver")
+    echo "exe2: ", exe.len
+
   d.process = startProcess(exe, args = ["--port=" & $d.port.int])
   sleep(1000)
 
