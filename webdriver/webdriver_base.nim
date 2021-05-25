@@ -19,7 +19,10 @@ proc init*(d: WebDriver) =
 proc checkErr(j: JsonNode) =
   if j.kind == JObject:
     let e = j{"error"}
+    let m = j{"message"}
     if not e.isNil and e.kind == JString:
+      if not m.isNil and m.kind == JString:
+        raise newException(Exception, e.getStr() & ": " & m.getStr())
       raise newException(Exception, e.getStr())
 
 proc request(d: WebDriver, meth: HttpMethod, path: string, o: JsonNode = nil): Future[JsonNode] {.async.} =
@@ -42,9 +45,7 @@ proc request(d: WebDriver, meth: HttpMethod, path: string, o: JsonNode = nil): F
     url &= "/"
     url &= path
   echo "req ", url, " meth ", meth, " b ", b
-  # await sleepAsync(1000000)
   let r = await client.request(url, httpMethod = meth, body = b)
-  echo "sent "
   let rb = await r.body
   let res = parseJson(rb)["value"]
   echo "res: ", res
