@@ -5,20 +5,25 @@ export driver
 
 type ChromeDriver* = ref object of WebDriver
   process: Process
+  notInitialized: bool
 
 method startDriverProcess(d: ChromeDriver) =
   var exe = findExe("chromedriver")
-  echo "exe: ", exe.len
-  if exe.len == 0:
-    exe = findExe("chromium.chromedriver")
-    echo "exe2: ", exe.len
+  # echo "exe: ", exe.len
+  # if exe.len == 0:
+  #   exe = findExe("chromium.chromedriver")
+  #   echo "exe2: ", exe.len
 
   d.process = startProcess(exe, args = ["--port=" & $d.port.int])
   sleep(1000)
 
 proc newChromeDriver*(): ChromeDriver =
   result.new()
-  result.init()
+  try:
+    result.init()
+  except:
+    result.notInitialized = true
+    discard
 
 method close*(d: ChromeDriver) {.async.} =
   await procCall WebDriver(d).close()

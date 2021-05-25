@@ -22,7 +22,7 @@ proc checkErr(j: JsonNode) =
     let m = j{"message"}
     if not e.isNil and e.kind == JString:
       if not m.isNil and m.kind == JString:
-        raise newException(Exception, e.getStr() & ": " & m.getStr())
+        raise newException(Exception, m.getStr())
       raise newException(Exception, e.getStr())
 
 proc request(d: WebDriver, meth: HttpMethod, path: string, o: JsonNode = nil): Future[JsonNode] {.async.} =
