@@ -18,12 +18,12 @@ proc init*(d: WebDriver) =
 
 proc checkErr(j: JsonNode) =
   if j.kind == JObject:
-    let e = j{"error"}
-    let m = j{"message"}
-    if not e.isNil and e.kind == JString:
-      if not m.isNil and m.kind == JString:
-        raise newException(Exception, m.getStr())
-      raise newException(Exception, e.getStr())
+    var err = j{"error"}.getStr()
+    let msg = j{"message"}.getStr()
+    if err.len > 0:
+      if msg.len > 0:
+        err = msg:
+      raise newException(Exception, err)
 
 proc request(d: WebDriver, meth: HttpMethod, path: string, o: JsonNode = nil): Future[JsonNode] {.async.} =
   let client = newAsyncHttpClient()
