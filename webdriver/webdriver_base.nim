@@ -18,9 +18,12 @@ proc init*(d: WebDriver) =
 
 proc checkErr(j: JsonNode) =
   if j.kind == JObject:
-    let e = j{"error"}
-    if not e.isNil and e.kind == JString:
-      raise newException(Exception, e.getStr())
+    var err = j{"error"}.getStr()
+    let msg = j{"message"}.getStr()
+    if err.len > 0:
+      if msg.len > 0:
+        err = msg
+      raise newException(Exception, err)
 
 proc request(d: WebDriver, meth: HttpMethod, path: string, o: JsonNode = nil): Future[JsonNode] {.async.} =
   let client = newAsyncHttpClient()
@@ -38,7 +41,6 @@ proc request(d: WebDriver, meth: HttpMethod, path: string, o: JsonNode = nil): F
   if path.len != 0:
     url &= "/"
     url &= path
-
   let r = await client.request(url, httpMethod = meth, body = b)
   let rb = await r.body
   let res = parseJson(rb)["value"]
@@ -97,7 +99,7 @@ method getElementFromElement*(d: WebDriver, e: string, strategy: By, value: stri
 method getElementProperty*(d: WebDriver, e, a: string): Future[string] {.async.} =
   let r = await get(d, "element/" & e & "/property/" & a)
   return r.getStr()
-  
+
 method getElementAttribute*(d: WebDriver, e, a: string): Future[string] {.async.} =
   let r = await get(d, "element/" & e & "/attribute/" & a)
   return r.getStr()
@@ -147,4 +149,3 @@ method executeScript*(d: WebDriver, code: string, args = %*[]): Future[string] {
 
   let r = await post(d, "execute/sync", json)
   return $r
-

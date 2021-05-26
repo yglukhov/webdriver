@@ -154,8 +154,8 @@ method startSession*(d: FirefoDriver, options = %*{}, headless = false) {.async.
       break
     except:
       if getTime() > endTime:
-        raise
-        
+        raise newException(Exception, "Firefox webdriver connection timeout")
+
     await sleepAsync(200)
 
   let hi = await d.readMessage()
@@ -185,4 +185,3 @@ method executeScript*(d: FirefoDriver, code: string, args = %*[]): Future[string
 
   let r = await send(d, "ExecuteScript", json)
   return $r["value"]
-
