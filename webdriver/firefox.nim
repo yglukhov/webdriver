@@ -62,11 +62,13 @@ proc readMessage(d: FirefoDriver): Future[JsonNode] {.async.} =
     var d = await d.sock.recv(1)
     if d == ":": break
     strLen &= d
-
+  echo "."
   var sz = parseInt(strLen)
   var s = await d.sock.recv(sz)
+  echo "read data: ", s
   let j = parseJson(s)
-  # echo "read message: ", j
+  echo "read message: ", j
+  echo "..."
   return j
 
 proc send(d: FirefoDriver, meth: string, o: JsonNode = nil): Future[JsonNode] {.async.} =
@@ -155,7 +157,7 @@ method startSession*(d: FirefoDriver, options = %*{}, headless = false) {.async.
     except:
       if getTime() > endTime:
         raise
-        
+
     await sleepAsync(200)
 
   let hi = await d.readMessage()
@@ -185,4 +187,3 @@ method executeScript*(d: FirefoDriver, code: string, args = %*[]): Future[string
 
   let r = await send(d, "ExecuteScript", json)
   return $r["value"]
-
