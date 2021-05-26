@@ -4,5 +4,5 @@ proc noimpl* =
   assert(false, "abstract method called")
 
 proc allocateRandomPort*(): Port =
-  # TODO: ...
-  Port(rand(49152..65535))
+  randomize()
+  Port(rand(30000..39999))

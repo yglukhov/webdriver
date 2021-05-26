@@ -62,13 +62,11 @@ proc readMessage(d: FirefoDriver): Future[JsonNode] {.async.} =
     var d = await d.sock.recv(1)
     if d == ":": break
     strLen &= d
-  echo "."
+
   var sz = parseInt(strLen)
   var s = await d.sock.recv(sz)
-  echo "read data: ", s
   let j = parseJson(s)
-  echo "read message: ", j
-  echo "..."
+  # echo "read message: ", j
   return j
 
 proc send(d: FirefoDriver, meth: string, o: JsonNode = nil): Future[JsonNode] {.async.} =
@@ -156,7 +154,7 @@ method startSession*(d: FirefoDriver, options = %*{}, headless = false) {.async.
       break
     except:
       if getTime() > endTime:
-        raise
+        raise newException(Exception, "Firefox webdriver connection timeout")
 
     await sleepAsync(200)
 
