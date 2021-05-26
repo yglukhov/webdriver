@@ -22,7 +22,7 @@ proc checkErr(j: JsonNode) =
     let msg = j{"message"}.getStr()
     if err.len > 0:
       if msg.len > 0:
-        err = msg:
+        err = msg
       raise newException(Exception, err)
 
 proc request(d: WebDriver, meth: HttpMethod, path: string, o: JsonNode = nil): Future[JsonNode] {.async.} =
