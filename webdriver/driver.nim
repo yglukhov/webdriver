@@ -11,6 +11,7 @@ type
     xPath = "xpath"
 
 type Driver* = ref object of RootObj
+  downloadDir*: string
 
 method setUrl*(d: Driver, url: string) {.async, base.} = noimpl()
 method getUrl*(d: Driver): Future[string] {.async, base.} = noimpl()

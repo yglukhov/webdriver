@@ -1,10 +1,11 @@
-import asyncdispatch, osproc, os, json
+import asyncdispatch, osproc, os, json, tables
 
 import ./driver, ./webdriver_base
 export driver
 
 type ChromeDriver* = ref object of WebDriver
   process: Process
+  prefs*: Table[string, JsonNode] # Chrome prefs
 
 method startDriverProcess(d: ChromeDriver) =
   var exe = findExe("chromedriver")
@@ -31,3 +32,11 @@ method adjustSessionArguments*(d: ChromeDriver, args: JsonNode, options = %*{}, 
 
   if options != %*{}:
     args["capabilities"]["alwaysMatch"]["goog:chromeOptions"] = options
+
+  for k, v in d.prefs:
+    args{"capabilities", "alwaysMatch", "goog:chromeOptions", "prefs", k} = v
+
+  if d.downloadDir != "":
+    args{"capabilities", "alwaysMatch", "goog:chromeOptions", "prefs", "download.default_directory"} = %d.downloadDir
+
+  echo "adjustedArgs: ", args

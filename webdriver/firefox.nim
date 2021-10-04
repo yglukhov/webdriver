@@ -1,4 +1,4 @@
-import asyncdispatch, strutils, json, osproc, os, times
+import asyncdispatch, strutils, json, osproc, os, times, tables
 
 import asyncnet
 
@@ -17,15 +17,25 @@ type FirefoDriver* = ref object of Driver
   reqCounter: int
   sock: AsyncSocket
   marionettePort: Port
+  prefs*: Table[string, JsonNode] # Firefox user_prefs for prefs.js
 
 proc createProfileFolder(d: FirefoDriver) =
   d.profileFolder = getTempDir() / "ffprofilenim" & $d.marionettePort.int
   removeDir(d.profileFolder)
   createDir(d.profileFolder)
-  writeFile(d.profileFolder / "prefs.js", """
+  var profile = """
 user_pref("marionette.contentListener", true);
 user_pref("marionette.port", """ & $d.marionettePort.int & """);
-""")
+"""
+  if d.downloadDir != "":
+    doAssert('"' notin d.downloadDir)
+    profile &= """user_pref("browser.download.dir", '""" & d.downloadDir & "');\n"
+    profile &= "user_pref('browser.download.manager.showWhenStarting', false);\n"
+    profile &= "user_pref('browser.download.folderList', 2);\n"
+
+  for k, v in d.prefs:
+    profile &= "user_pref('" & k & "', " & $v & ");\n"
+  writeFile(d.profileFolder / "prefs.js", profile)
 
 proc startDriverProcess(d: FirefoDriver, headless = false) =
   let exe = findExe("firefox")
