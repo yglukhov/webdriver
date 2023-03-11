@@ -24,11 +24,10 @@ method close*(d: ChromeDriver) {.async.} =
 
 method adjustSessionArguments*(d: ChromeDriver, args: JsonNode, options = %*{}, headless: bool) =
   if headless:
-    args["capabilities"]["alwaysMatch"]["goog:chromeOptions"] = %*{
-      "args": [
-        "-headless"
-      ]
-    }
+    if options.hasKey("args"):
+      options["args"].add(%"-headless")
+    else:
+      options["args"] = %["-headless"]
 
   if options != %*{}:
     args["capabilities"]["alwaysMatch"]["goog:chromeOptions"] = options
