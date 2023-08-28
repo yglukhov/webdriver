@@ -31,6 +31,7 @@ method close*(d: Driver) {.async, base.} = await d.deleteSession()
 method sendKeys*(d: Driver, e,t: string) {.async, base.} = noimpl()
 method clear*(d: Driver, e: string) {.async, base.} = noimpl()
 method executeScript*(d: Driver,code: string, args = %*[]): Future[string] {.async, base.} = noimpl()
+method takeScreenshot*(d: Driver, elem: string): Future[string] {.async, base.} = noimpl()
 
 proc getElementsByCssSelector*(d: Driver, s: string): Future[seq[string]] {.async.} =
   result = await d.getElements(By.cssSelector, s)
@@ -52,6 +53,7 @@ proc getElementByTagName*(d: Driver, s: string): Future[string] {.async.} =
   result = await d.getElement(By.tagName, s)
 proc getElementByXPath*(d: Driver, s: string): Future[string] {.async.} =
   result = await d.getElement(By.xPath, s)
+
 
 proc waitElement*(d: Driver, strategy: By, value: string, timeout = 20000, pollFrequency = 50): Future[string] {.async.} =
   ## When "setUrl ()" or" elementClick ()" is used, 

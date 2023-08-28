@@ -1,4 +1,4 @@
-import asyncdispatch, strutils, json, osproc, os, times, tables
+import asyncdispatch, strutils, json, osproc, os, times, tables, base64
 
 import asyncnet
 
@@ -10,7 +10,7 @@ export driver
 ## Marionette client for firefox
 ## Reference: https://github.com/njasm/marionette_client/blob/master/client.go
 
-type FirefoDriver* = ref object of Driver
+type FirefoxDriver* = ref object of Driver
   process: Process
   marionetteProtocol: int
   profileFolder: string
@@ -19,7 +19,7 @@ type FirefoDriver* = ref object of Driver
   marionettePort: Port
   prefs*: Table[string, JsonNode] # Firefox user_prefs for prefs.js
 
-proc createProfileFolder(d: FirefoDriver) =
+proc createProfileFolder(d: FirefoxDriver) =
   d.profileFolder = getTempDir() / "ffprofilenim" & $d.marionettePort.int
   removeDir(d.profileFolder)
   createDir(d.profileFolder)
@@ -37,18 +37,18 @@ user_pref("marionette.port", """ & $d.marionettePort.int & """);
     profile &= "user_pref('" & k & "', " & $v & ");\n"
   writeFile(d.profileFolder / "prefs.js", profile)
 
-proc startDriverProcess(d: FirefoDriver, headless = false) =
+proc startDriverProcess(d: FirefoxDriver, headless = false) =
   let exe = findExe("firefox")
   var args = @["-marionette", "-profile", d.profileFolder]
   if headless:
     args.add("-headless")
   d.process = startProcess(exe, args = args)
 
-proc newFirefoxDriver*(): FirefoDriver =
+proc newFirefoxDriver*(): FirefoxDriver =
   result.new()
   result.marionettePort = allocateRandomPort()
 
-method close*(d: FirefoDriver) {.async.} =
+method close*(d: FirefoxDriver) {.async.} =
   await procCall Driver(d).close()
   d.process.terminate()
   removeDir(d.profileFolder)
@@ -66,7 +66,7 @@ proc checkErr(j: JsonNode) =
   else:
     raise newException(Exception, "Unexpected response: " & $j)
 
-proc readMessage(d: FirefoDriver): Future[JsonNode] {.async.} =
+proc readMessage(d: FirefoxDriver): Future[JsonNode] {.async.} =
   var strLen = ""
   while strLen.len < 100:
     var d = await d.sock.recv(1)
@@ -79,7 +79,7 @@ proc readMessage(d: FirefoDriver): Future[JsonNode] {.async.} =
   # echo "read message: ", j
   return j
 
-proc send(d: FirefoDriver, meth: string, o: JsonNode = nil): Future[JsonNode] {.async.} =
+proc send(d: FirefoxDriver, meth: string, o: JsonNode = nil): Future[JsonNode] {.async.} =
   inc d.reqCounter
   let data = %*[0, d.reqCounter, "WebDriver:" & meth, o]
   var b: string
@@ -89,18 +89,18 @@ proc send(d: FirefoDriver, meth: string, o: JsonNode = nil): Future[JsonNode] {.
   checkErr(r)
   return r[3]
 
-method setUrl*(d: FirefoDriver, url: string) {.async.} =
+method setUrl*(d: FirefoxDriver, url: string) {.async.} =
   discard await send(d, "Navigate", %*{"url": url})
 
-method getUrl*(d: FirefoDriver): Future[string] {.async.} =
+method getUrl*(d: FirefoxDriver): Future[string] {.async.} =
   let r = await send(d, "GetCurrentURL", %*{})
   return r["value"].getStr()
 
-method getSource*(d: FirefoDriver): Future[string] {.async.} =
+method getSource*(d: FirefoxDriver): Future[string] {.async.} =
   let r = await send(d, "GetPageSource", %*{})
   return r["value"].getStr()
 
-method getElements*(d: FirefoDriver, strategy: By, value: string): Future[seq[string]] {.async.} =
+method getElements*(d: FirefoxDriver, strategy: By, value: string): Future[seq[string]] {.async.} =
   let r = await send(d, "FindElements", %*{"using": $strategy, "value": value})
   var res: seq[string]
   for e in r:
@@ -108,14 +108,14 @@ method getElements*(d: FirefoDriver, strategy: By, value: string): Future[seq[st
       res.add(v.getStr())
   return res
 
-method getElement*(d: FirefoDriver, strategy: By, value: string): Future[string] {.async.} =
+method getElement*(d: FirefoxDriver, strategy: By, value: string): Future[string] {.async.} =
   let r = await send(d, "FindElement", %*{"using": $strategy, "value": value})
   var res: string
   for k, v in r["value"]:
     res.add(v.getStr())
   return res
 
-method getElementsFromElement*(d: FirefoDriver, e: string, strategy: By, value: string): Future[seq[string]] {.async.} =
+method getElementsFromElement*(d: FirefoxDriver, e: string, strategy: By, value: string): Future[seq[string]] {.async.} =
   let r = await send(d, "FindElements", %*{"element": e, "using": $strategy, "value": value})
   var res: seq[string]
   for e in r:
@@ -123,29 +123,29 @@ method getElementsFromElement*(d: FirefoDriver, e: string, strategy: By, value: 
       res.add(v.getStr())
   return res
 
-method getElementFromElement*(d: FirefoDriver, e: string, strategy: By, value: string): Future[string] {.async.} =
+method getElementFromElement*(d: FirefoxDriver, e: string, strategy: By, value: string): Future[string] {.async.} =
   let r = await send(d, "FindElement", %*{"element": e, "using": $strategy, "value": value})
   var res: string
   for k, v in r["value"]:
     res.add(v.getStr())
   return res
 
-method getElementAttribute*(d: FirefoDriver, e, a: string): Future[string] {.async.} =
+method getElementAttribute*(d: FirefoxDriver, e, a: string): Future[string] {.async.} =
   let r = await send(d, "GetElementAttribute", %*{"id": e, "name": a})
   return r["value"].getStr()
 
-method getElementProperty*(d: FirefoDriver, e, a: string): Future[string] {.async.} =
+method getElementProperty*(d: FirefoxDriver, e, a: string): Future[string] {.async.} =
   let r = await send(d, "GetElementProperty", %*{"id": e, "name": a})
   return r["value"].getStr()
 
-method getElementText*(d: FirefoDriver, e: string): Future[string] {.async.} =
+method getElementText*(d: FirefoxDriver, e: string): Future[string] {.async.} =
   let r = await send(d, "GetElementText", %*{"id": e})
   return r["value"].getStr()
 
-method elementClick*(d: FirefoDriver, e: string) {.async.} =
+method elementClick*(d: FirefoxDriver, e: string) {.async.} =
   discard await send(d, "ElementClick", %*{"id": e})
 
-method startSession*(d: FirefoDriver, options = %*{}, headless = false) {.async.} =
+method startSession*(d: FirefoxDriver, options = %*{}, headless = false) {.async.} =
   d.createProfileFolder()
   d.startDriverProcess(headless)
   d.sock = newAsyncSocket()
@@ -173,19 +173,19 @@ method startSession*(d: FirefoDriver, options = %*{}, headless = false) {.async.
 
   discard await send(d, "NewSession", args)
 
-method deleteSession*(d: FirefoDriver) {.async.} =
+method deleteSession*(d: FirefoxDriver) {.async.} =
   discard await send(d, "DeleteSession", %*{})
 
-method back*(d: FirefoDriver) {.async.} =
+method back*(d: FirefoxDriver) {.async.} =
   discard await send(d, "Back", %*{})
 
-method sendKeys*(d: FirefoDriver, e,t: string) {.async.} =
+method sendKeys*(d: FirefoxDriver, e,t: string) {.async.} =
   discard await send(d, "ElementSendKeys", %*{"id": e,"text": t})
 
-method clear*(d: FirefoDriver, e: string) {.async.} =
+method clear*(d: FirefoxDriver, e: string) {.async.} =
   discard await send(d, "ElementClear", %*{"id": e})
 
-method executeScript*(d: FirefoDriver, code: string, args = %*[]): Future[string] {.async.} =
+method executeScript*(d: FirefoxDriver, code: string, args = %*[]): Future[string] {.async.} =
   var json = %*{
     "script": code,
     "args": []
@@ -195,3 +195,14 @@ method executeScript*(d: FirefoDriver, code: string, args = %*[]): Future[string
 
   let r = await send(d, "ExecuteScript", json)
   return $r["value"]
+
+# method getWindowHandle*(d: FirefoxDriver): Future[string] {.async.} =
+#   let r = await send(d, "GetWindowHandle", %*{})
+#   return r["value"].getStr()
+
+# method setWindowRect*(d: FirefoxDriver, r: tuple[x, y, w, h: int]) {.async.} =
+#   discard await send(d, "SetWindowRect", %*{"x": r.x, "y": r.y, "width": r.w, "height": r.h})
+
+method takeScreenshot*(d: FirefoxDriver, elem: string): Future[string] {.async.} =
+  let r = await send(d, "TakeScreenshot", %*{"id": elem})
+  return base64.decode(r["value"].getStr())

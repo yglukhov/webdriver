@@ -1,4 +1,4 @@
-import asyncdispatch, httpclient, strutils, json
+import asyncdispatch, httpclient, strutils, json, base64
 import private/utils
 import ./driver
 export driver
@@ -149,3 +149,7 @@ method executeScript*(d: WebDriver, code: string, args = %*[]): Future[string] {
 
   let r = await post(d, "execute/sync", json)
   return $r
+
+method takeScreenshot*(d: WebDriver, e: string): Future[string] {.async.} =
+  let r = await get(d, "element/" & e & "/screenshot")
+  return base64.decode(r.getStr())
