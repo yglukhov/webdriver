@@ -9,33 +9,36 @@ export driver
 
 ## Marionette client for firefox
 ## Reference: https://github.com/njasm/marionette_client/blob/master/client.go
+## Even better "official" reference: https://github.com/mozilla-firefox/firefox/blob/main/remote/marionette/driver.sys.mjs
 
 type FirefoxDriver* = ref object of Driver
   process: Process
   marionetteProtocol: int
-  profileFolder: string
+  profileFolder*: string
+  persistingProfile*: bool
   reqCounter: int
   sock: AsyncSocket
-  marionettePort: Port
+  marionettePort*: Port
   prefs*: Table[string, JsonNode] # Firefox user_prefs for prefs.js
 
 proc createProfileFolder(d: FirefoxDriver) =
-  d.profileFolder = getTempDir() / "ffprofilenim" & $d.marionettePort.int
-  removeDir(d.profileFolder)
-  createDir(d.profileFolder)
-  var profile = """
+  if not d.persistingProfile:
+    removeDir(d.profileFolder)
+  if not dirExists(d.profileFolder):
+    createDir(d.profileFolder)
+    var profile = """
 user_pref("marionette.contentListener", true);
 user_pref("marionette.port", """ & $d.marionettePort.int & """);
-"""
-  if d.downloadDir != "":
-    doAssert('"' notin d.downloadDir)
-    profile &= """user_pref("browser.download.dir", '""" & d.downloadDir & "');\n"
-    profile &= "user_pref('browser.download.manager.showWhenStarting', false);\n"
-    profile &= "user_pref('browser.download.folderList', 2);\n"
+  """
+    if d.downloadDir != "":
+      doAssert('"' notin d.downloadDir)
+      profile &= """user_pref("browser.download.dir", '""" & d.downloadDir & "');\n"
+      profile &= "user_pref('browser.download.manager.showWhenStarting', false);\n"
+      profile &= "user_pref('browser.download.folderList', 2);\n"
 
-  for k, v in d.prefs:
-    profile &= "user_pref('" & k & "', " & $v & ");\n"
-  writeFile(d.profileFolder / "prefs.js", profile)
+    for k, v in d.prefs:
+      profile &= "user_pref('" & k & "', " & $v & ");\n"
+    writeFile(d.profileFolder / "prefs.js", profile)
 
 proc startDriverProcess(d: FirefoxDriver, headless = false) =
   let exe = findExe("firefox")
@@ -51,7 +54,8 @@ proc newFirefoxDriver*(): FirefoxDriver =
 method close*(d: FirefoxDriver) {.async.} =
   await procCall Driver(d).close()
   d.process.terminate()
-  removeDir(d.profileFolder)
+  if not d.persistingProfile:
+    removeDir(d.profileFolder)
 
 proc checkErr(j: JsonNode) =
   if j.kind == JArray and j.len == 4:
@@ -145,11 +149,8 @@ method getElementText*(d: FirefoxDriver, e: string): Future[string] {.async.} =
 method elementClick*(d: FirefoxDriver, e: string) {.async.} =
   discard await send(d, "ElementClick", %*{"id": e})
 
-method startSession*(d: FirefoxDriver, options = %*{}, headless = false) {.async.} =
-  d.createProfileFolder()
-  d.startDriverProcess(headless)
+proc startSessionWithExistingProcess*(d: FirefoxDriver, options = %*{}) {.async.} =
   d.sock = newAsyncSocket()
-
   var args = %*{
     "acceptInsecureCerts": true
   }
@@ -173,6 +174,14 @@ method startSession*(d: FirefoxDriver, options = %*{}, headless = false) {.async
 
   discard await send(d, "NewSession", args)
 
+method startSession*(d: FirefoxDriver, options = %*{}, headless = false) {.async.} =
+  if d.profileFolder == "":
+    d.profileFolder = getTempDir() / "ffprofilenim" & $d.marionettePort.int
+
+  d.createProfileFolder()
+  d.startDriverProcess(headless)
+  await d.startSessionWithExistingProcess(options)
+
 method deleteSession*(d: FirefoxDriver) {.async.} =
   discard await send(d, "DeleteSession", %*{})
 
@@ -195,6 +204,21 @@ method executeScript*(d: FirefoxDriver, code: string, args = %*[]): Future[strin
 
   let r = await send(d, "ExecuteScript", json)
   return $r["value"]
+
+method getCurrentWindowHandle*(d: FirefoxDriver): Future[string] {.async.} =
+  let r = await send(d, "GetWindowHandle", %*{})
+  return r["value"].getStr()
+
+method getWindowHandles*(d: FirefoxDriver): Future[seq[string]] {.async.} =
+  let r = await send(d, "GetWindowHandles", %*{})
+  for j in r:
+    result.add(j.getStr())
+
+method switchToWindow*(d: FirefoxDriver, handle: string) {.async.} =
+  discard await send(d, "SwitchToWindow", %*{"handle": handle})
+
+method closeCurrentWindow*(d: FirefoxDriver) {.async.} =
+  discard await send(d, "CloseWindow", %*{})
 
 # method getWindowHandle*(d: FirefoxDriver): Future[string] {.async.} =
 #   let r = await send(d, "GetWindowHandle", %*{})

@@ -33,6 +33,11 @@ method clear*(d: Driver, e: string) {.async, base.} = noimpl()
 method executeScript*(d: Driver,code: string, args = %*[]): Future[string] {.async, base.} = noimpl()
 method takeScreenshot*(d: Driver, elem: string): Future[string] {.async, base.} = noimpl()
 
+method getCurrentWindowHandle*(d: Driver): Future[string] {.async, base.} = noimpl()
+method getWindowHandles*(d: Driver): Future[seq[string]] {.async, base.} = noimpl()
+method switchToWindow*(d: Driver, handle: string) {.async, base.} = noimpl()
+method closeCurrentWindow*(d: Driver) {.async, base.} = noimpl()
+
 proc getElementsByCssSelector*(d: Driver, s: string): Future[seq[string]] {.async.} =
   result = await d.getElements(By.cssSelector, s)
 proc getElementsByLinkText*(d: Driver, s: string): Future[seq[string]] {.async.} =
@@ -73,3 +78,23 @@ proc waitElement*(d: Driver, strategy: By, value: string, timeout = 20000, pollF
 
     if getTime() > endTime:
         break
+
+proc waitOneOfElements*(d: Driver, elems: seq[tuple[strategy: By, value: string]], timeout = 20000, pollFrequency = 50): Future[tuple[idx: int, id: string]] {.async.} =
+  ## When "setUrl ()" or" elementClick ()" is used,
+  ## wait for the page specified element loading to complete and then perform a subsequent action.
+  ## Otherwise, you may not get the element.
+  var curTime = getTime()
+  var endTime = curTime + timeout.milliseconds
+  for i in 0 ..< elems.len:
+    while true:
+      try:
+        var ret = await d.getElement(elems[i].strategy, elems[i].value)
+        if ret != "":
+          return (i, ret)
+      except:
+        discard
+
+      await sleepAsync(pollFrequency)
+
+      if getTime() > endTime:
+        return (-1, "")
