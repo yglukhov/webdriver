@@ -13,6 +13,7 @@ type WebDriver* = ref object of Driver
 method startDriverProcess(d: WebDriver) {.base.} = noimpl()
 
 proc init*(d: WebDriver) =
+  d.Driver.init()
   d.port = allocateRandomPort()
   d.startDriverProcess()
 
@@ -66,7 +67,7 @@ method getSource*(d: WebDriver): Future[string] {.async.} =
   let r = await get(d, "source")
   return r.getStr()
 
-method getElements*(d: WebDriver, strategy: By, value: string): Future[seq[string]] {.async.} =
+method getElementHandles*(d: WebDriver, strategy: By, value: string): Future[seq[string]] {.async.} =
   let r = await post(d, "elements", %*{"using": $strategy, "value": value})
   var res: seq[string]
   for e in r:
@@ -74,7 +75,7 @@ method getElements*(d: WebDriver, strategy: By, value: string): Future[seq[strin
       res.add(v.getStr())
   return res
 
-method getElement*(d: WebDriver, strategy: By, value: string): Future[string] {.async.} =
+method getElementHandle*(d: WebDriver, strategy: By, value: string): Future[string] {.async.} =
   let r = await post(d, "element", %*{"using": $strategy, "value": value})
   var res: string
   for k, v in r:

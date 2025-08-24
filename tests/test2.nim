@@ -1,11 +1,5 @@
-# webdriver
-Nim webdriver for Chrome and Firefox
-
-## Usage
-
-```nim
-import asyncdispatch
-import webdriver/[chromedriver, firefox]
+import std/asyncdispatch
+import webdriver/[geckodriver, firefox, chromedriver]
 
 proc test() {.async.} =
   let d = newFirefoxDriver()
@@ -16,4 +10,3 @@ proc test() {.async.} =
   echo text
 
 waitFor test()
-```

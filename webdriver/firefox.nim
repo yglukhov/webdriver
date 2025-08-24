@@ -49,6 +49,7 @@ proc startDriverProcess(d: FirefoxDriver, headless = false) =
 
 proc newFirefoxDriver*(): FirefoxDriver =
   result.new()
+  result.init()
   result.marionettePort = allocateRandomPort()
 
 method close*(d: FirefoxDriver) {.async.} =
@@ -104,7 +105,7 @@ method getSource*(d: FirefoxDriver): Future[string] {.async.} =
   let r = await send(d, "GetPageSource", %*{})
   return r["value"].getStr()
 
-method getElements*(d: FirefoxDriver, strategy: By, value: string): Future[seq[string]] {.async.} =
+method getElementHandles*(d: FirefoxDriver, strategy: By, value: string): Future[seq[string]] {.async.} =
   let r = await send(d, "FindElements", %*{"using": $strategy, "value": value})
   var res: seq[string]
   for e in r:
@@ -112,7 +113,7 @@ method getElements*(d: FirefoxDriver, strategy: By, value: string): Future[seq[s
       res.add(v.getStr())
   return res
 
-method getElement*(d: FirefoxDriver, strategy: By, value: string): Future[string] {.async.} =
+method getElementHandle*(d: FirefoxDriver, strategy: By, value: string): Future[string] {.async.} =
   let r = await send(d, "FindElement", %*{"using": $strategy, "value": value})
   var res: string
   for k, v in r["value"]:
